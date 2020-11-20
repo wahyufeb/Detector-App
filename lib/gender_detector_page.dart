@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:gender_detector_app/components/appBarComponent.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:tflite/tflite.dart';
+import 'package:audioplayer/audioplayer.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class GenderDetectorPage extends StatefulWidget {
   @override
@@ -14,6 +17,11 @@ class GenderDetectorPageState extends State<GenderDetectorPage> {
   PickedFile _image;
   List _output;
   final picker = ImagePicker();
+  String _resultGender;
+
+  // audio
+  AudioPlayer audioPlayer;
+  AudioPlayerState audioPlayerState;
 
   @override
   void initState() {
@@ -24,6 +32,73 @@ class GenderDetectorPageState extends State<GenderDetectorPage> {
         _isLoading = false;
       });
     });
+    // audio
+    audioPlayer = AudioPlayer();
+    audioPlayerState = null;
+  }
+
+  Future loadAsset(String gender) async {
+    return await rootBundle.load('assets/speech/$gender.mp3');
+  }
+
+  Future<void> play(data) async {
+    var gender;
+    (int.parse(data.split(' ')[0]) == 0) ? gender = "male" : gender = "female";
+    // jika laki laki
+    final file =
+        new File('${(await getTemporaryDirectory()).path}/$gender.mp3');
+    await file.writeAsBytes((await loadAsset(gender)).buffer.asUint8List());
+    await audioPlayer.play(file.path, isLocal: true);
+
+    setState(() {
+      audioPlayerState = AudioPlayerState.PLAYING;
+      if (audioPlayer.state == AudioPlayerState.COMPLETED) {
+        audioPlayerState = AudioPlayerState.COMPLETED;
+      }
+    });
+  }
+
+  Future<void> stop() async {
+    await audioPlayer.stop();
+    setState(() {
+      audioPlayerState = AudioPlayerState.STOPPED;
+    });
+  }
+
+  choosePicker(String modeCamera) async {
+    var image;
+    if (modeCamera == "camera") {
+      image = await picker.getImage(source: ImageSource.camera);
+    } else {
+      image = await picker.getImage(source: ImageSource.gallery);
+    }
+    if (image == null) return null;
+    setState(() {
+      _isLoading = true;
+      _image = image;
+    });
+    runModel(image);
+  }
+
+  runModel(PickedFile image) async {
+    var output = await Tflite.runModelOnImage(
+      path: image.path,
+      numResults: 2,
+      imageMean: 127.5,
+      imageStd: 127.5,
+      threshold: 0.5,
+    );
+    setState(() {
+      _isLoading = false;
+      _output = output;
+      _resultGender = _output[0]['label'];
+    });
+    play(_resultGender);
+  }
+
+  loadModel() async {
+    await Tflite.loadModel(
+        model: "assets/model_unquant.tflite", labels: "assets/labels.txt");
   }
 
   @override
@@ -73,7 +148,7 @@ class GenderDetectorPageState extends State<GenderDetectorPage> {
                 alignment: Alignment.topCenter,
                 margin: EdgeInsets.only(top: 40),
                 child: Text(
-                  "Anda harusnya \n ${_output[0]['label'].split(' ')[1]}",
+                  "Anda harusnya \n ${_resultGender.split(' ')[1]}",
                   style: TextStyle(
                     fontSize: 35,
                     fontWeight: FontWeight.w600,
@@ -89,7 +164,10 @@ class GenderDetectorPageState extends State<GenderDetectorPage> {
               margin: EdgeInsets.only(left: 10),
               child: RaisedButton(
                 onPressed: () {
-                  choosePicker("camera");
+                  if (audioPlayerState == AudioPlayerState.PLAYING) {
+                    stop();
+                  }
+                  choosePicker("gallery");
                 },
                 child: Text("Ambil Foto dari Kamera"),
               ),
@@ -103,6 +181,9 @@ class GenderDetectorPageState extends State<GenderDetectorPage> {
               margin: EdgeInsets.only(right: 10),
               child: RaisedButton(
                 onPressed: () {
+                  if (audioPlayerState == AudioPlayerState.PLAYING) {
+                    stop();
+                  }
                   choosePicker("gallery");
                 },
                 child: Text("Ambil Foto dari Gallery"),
@@ -112,39 +193,5 @@ class GenderDetectorPageState extends State<GenderDetectorPage> {
         ),
       ]),
     );
-  }
-
-  choosePicker(String modeCamera) async {
-    var image;
-    if (modeCamera == "camera") {
-      image = await picker.getImage(source: ImageSource.camera);
-    } else {
-      image = await picker.getImage(source: ImageSource.gallery);
-    }
-    if (image == null) return null;
-    setState(() {
-      _isLoading = true;
-      _image = image;
-    });
-    runModel(image);
-  }
-
-  runModel(PickedFile image) async {
-    var output = await Tflite.runModelOnImage(
-      path: image.path,
-      numResults: 2,
-      imageMean: 127.5,
-      imageStd: 127.5,
-      threshold: 0.5,
-    );
-    setState(() {
-      _isLoading = false;
-      _output = output;
-    });
-  }
-
-  loadModel() async {
-    await Tflite.loadModel(
-        model: "assets/model_unquant.tflite", labels: "assets/labels.txt");
   }
 }

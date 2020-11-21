@@ -23,50 +23,66 @@ class MainPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 30,
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: "Poppins",
                 ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(
                 height: 50,
               ),
-              Material(
-                elevation: 5,
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  width: 150,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                        colors: [Colors.pinkAccent[100], Colors.pink[400]],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    child: InkWell(
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                      offset: const Offset(0, 10.0),
+                      blurRadius: 20.0,
+                      color: Colors.pink.withAlpha(51),
+                      // spreadRadius: 2.0,
+                    ),
+                  ],
+                ),
+                child: Material(
+                  elevation: 0,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: 150,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          colors: [Colors.pinkAccent[100], Colors.pink[400]],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter),
                       borderRadius: BorderRadius.circular(20),
-                      splashColor: Colors.pink,
-                      child: Center(
-                        child: Text(
-                          "Lanjut",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        splashColor: Colors.pink,
+                        child: Center(
+                          child: Text(
+                            "Lanjut",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontWeight: FontWeight.w500,
+                              fontFamily: "Poppins",
+                            ),
                           ),
                         ),
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) {
+                                return HomePage();
+                              },
+                            ),
+                          );
+                        },
                       ),
-                      onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) {
-                              return HomePage();
-                            },
-                          ),
-                        );
-                      },
                     ),
                   ),
                 ),
